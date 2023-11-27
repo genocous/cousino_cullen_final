@@ -28,20 +28,24 @@ offset = 0
 total_tracks = 1000  # Change this to the total number of tracks you want
 
 # Search for tracks
-while offset < total_tracks:
-    results = sp.search(q='year:2023', type='track', limit=limit, offset=offset)
-    for track in results['tracks']['items']:
-        track_id = track['id']
-        track_name = track['name']
+for year in range(2020, 2023):
+    while offset < total_tracks:
+        results = sp.search(q=f'year:{year}', type='track', limit=limit, offset=offset)
+        for track in results['tracks']['items']:
+            track_id = track['id']
+            track_name = track['name']
 
-        # Cache track name
-        cache[track_id] = track_name
+            # Cache track name
+            cache[track_id] = track_name
 
-        # Store track in the database
-        c.execute('INSERT INTO tracks VALUES (?, ?)', (track_id, track_name))
+            # Store track in the database
+            c.execute('INSERT INTO tracks VALUES (?, ?)', (track_id, track_name))
 
-    # Increase offset for the next batch of tracks
-    offset += limit
+        # Increase offset for the next batch of tracks
+        offset += limit
+
+    # Reset offset for the next year
+    offset = 0
 
 # Save cache
 with open('cache.json', 'w') as f:
@@ -50,5 +54,3 @@ with open('cache.json', 'w') as f:
 # Commit database changes and close connection
 conn.commit()
 conn.close()
-
-
