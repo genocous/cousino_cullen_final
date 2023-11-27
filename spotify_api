@@ -1,1 +1,56 @@
-# Code to pull data from Spotify API and place in database
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
+import sqlite3
+import json
+
+client_id = "5af19f5cce964fe194f7caf977d8e540"
+client_secret = "b762b059cd7a42a69bc8f1fc0ea36f9c"
+# Set up Spotify API client
+client_credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
+sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
+
+# Set up SQLite database
+conn = sqlite3.connect('tracks.db')
+c = conn.cursor()
+c.execute('CREATE TABLE IF NOT EXISTS tracks (id int, name varchar(255))')
+
+conn.commit()
+
+# Load cache
+try:
+    with open('cache.json', 'r') as f:
+        cache = json.load(f)
+except FileNotFoundError:
+    cache = {}
+
+# Set up initial search parameters
+limit = 50
+offset = 0
+total_tracks = 300  # Change this to the total number of tracks you want
+
+# Search for tracks
+while offset < total_tracks:
+    results = sp.search(q='tag:new', type='track', limit=limit, offset=offset)
+    for track in results['tracks']['items']:
+        track_id = track['id']
+        track_name = track['name']
+
+        # Cache track name
+        cache[track_id] = track_name
+
+        # Store track in database
+        c.execute('INSERT INTO tracks VALUES (?, ?)', (track_id, track_name))
+
+        conn.commit()
+    # Increase offset for next batch of tracks
+    offset += limit
+
+# Save cache
+with open('cache.json', 'w') as f:
+    json.dump(cache, f)
+
+# Commit database changes and close connection
+conn.commit()
+conn.close()
+
+
