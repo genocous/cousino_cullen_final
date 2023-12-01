@@ -1,0 +1,43 @@
+import sqlite3
+from imdb import IMDb
+
+# Create a connection to the SQLite database
+conn = sqlite3.connect('movies.db')
+c = conn.cursor()
+
+# Delete the movies table if it already exists
+c.execute('DROP TABLE IF EXISTS movies')
+
+# Create a new table in the database for the movies and make id the primary key and autoincrement
+c.execute('CREATE TABLE movies (id INTEGER PRIMARY KEY, title varchar(255), genre varchar(255))')
+
+# Create an instance of the IMDb class
+ia = IMDb()
+
+# Start from a known movie ID
+start_id = 1
+
+# Keep track of how many movies we've fetched
+count = 0
+
+# Fetch movies until we have 3000
+while count < 3000:
+    try:
+        # Get the movie
+        movie = ia.get_movie(start_id)
+
+        # If the movie has a title and genres, store it in the database
+        if 'title' in movie and 'genres' in movie:
+            title = movie['title']
+            genre = movie['genres'][0] if movie['genres'] else None  # Get the first genre
+            c.execute('INSERT INTO movies (title, genre) VALUES (?, ?)', (title, genre))
+            count += 1
+    except:
+        pass
+
+    # Move on to the next ID
+    start_id += 1
+
+# Commit the changes and close the connection to the database
+conn.commit()
+conn.close()
