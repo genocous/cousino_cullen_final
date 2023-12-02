@@ -46,6 +46,7 @@ for keyword, words_count in common_words.items():
 
 conn.close()
 
+# Making visualization
 data = []
 for genre, subgenres in common_words.items():
     for subgenre, value in subgenres.items():
@@ -57,7 +58,9 @@ df['All Genres'] = 'All Genres'
 fig = px.treemap(df, path=['All Genres', 'Genre', 'Subgenre'], values='Value',
                  color='Value',
                  hover_name='Subgenre',  
-                 custom_data=['Value'])
+                 custom_data=['Value'],
+                 color_continuous_scale='mint',
+                 range_color=[0,10])
 
 fig.update_layout(
     title='Common Words in Music Genres',
