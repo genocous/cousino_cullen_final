@@ -41,7 +41,7 @@ for row in data:
 
 figsize = (15, .8 * len(new_df['genre'].unique()))
 plt.figure(figsize=figsize)
-sns.boxplot(new_df, y='genre', x='compound', palette='Purples', showmeans=True, meanprops={"marker":"x","markeredgecolor":"black","markersize":"10"})
+sns.boxplot(new_df, y='genre', x='compound', palette='Purples', showmeans=True, meanprops={"marker":"x","markeredgecolor":"black","markersize":"10"}).set(title="Sentiment Analysis of Book Titles by Genre")
 sns.despine(top=True, right=True, bottom=True, left=True)
 
 plt.show()
