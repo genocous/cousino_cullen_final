@@ -1,0 +1,28 @@
+import sqlite3
+import requests
+import random
+
+conn = sqlite3.connect('books.db')
+c = conn.cursor()
+
+c.execute('DROP TABLE IF EXISTS books')
+
+c.execute('CREATE TABLE books (id INTEGER PRIMARY KEY, title varchar(255), genre varchar(255))')
+
+insert_statement = 'INSERT INTO books (title, genre) VALUES (?, ?)'
+subjects = ['film','music','fantasy','historical_fiction','horror','humor','science_fiction','young_adult']
+
+for subject in subjects:
+    offset = 0
+    response = requests.get(f"https://openlibrary.org/subjects/{subject}.json?limit=25&offset={offset}")
+    work_count = response.json()['work_count']
+
+    while offset < (work_count - 25) and offset < (375 - 25):
+      offset += 25
+      response = requests.get(f"https://openlibrary.org/subjects/{subject}.json?limit=25&offset={offset}")
+      for i in range(0,25):
+        title = response.json()['works'][i]['title']
+        c.execute(insert_statement, (title, subject))
+
+conn.commit()
+conn.close()
