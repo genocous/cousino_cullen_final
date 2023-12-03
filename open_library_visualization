@@ -38,11 +38,12 @@ common_words = {}
 for keyword, words in genre_words.items():
     common_words[keyword] = dict(Counter(words).most_common(10))  
 
-for keyword, words_count in common_words.items():
-    print(f"Most common words in {keyword.capitalize()} book titles:")
-    for word, count in words_count.items():
-        print(f"{word}: {count}")
-    print("\n")
+with open("books_output.txt", "a") as f:
+    for keyword, words_count in common_words.items():
+        print(f"Most common words in {keyword.capitalize()} book titles:", file=f)
+        for word, count in words_count.items():
+            print(f"{word}: {count}", file=f)
+        print("\n", file=f)
 
 conn.close()
 
