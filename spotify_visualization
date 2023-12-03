@@ -37,11 +37,13 @@ common_words = {}
 for keyword, words in genre_words.items():
     common_words[keyword] = dict(Counter(words).most_common(10))  
 
-for keyword, words_count in common_words.items():
-    print(f"Most common words in {keyword.capitalize()} songs:")
-    for word, count in words_count.items():
-        print(f"{word}: {count}")
-    print("\n")
+with open("spotify_output.txt", "a") as f:
+
+    for keyword, words_count in common_words.items():
+        print(f"Most common words in {keyword.capitalize()} song titles:", file=f)
+        for word, count in words_count.items():
+            print(f"{word}: {count}", file=f)
+        print("\n", file=f)
 
 conn.close()
 
@@ -58,11 +60,11 @@ fig = px.treemap(df, path=['All Genres', 'Genre', 'Subgenre'], values='Value',
                  color='Value',
                  hover_name='Subgenre',  
                  custom_data=['Value'],
-                 color_continuous_scale='mint',
+                 color_continuous_scale='Greens',
                  range_color=[0,10])
 
 fig.update_layout(
-    title='Common Words in Music Genres',
+    title='Common Words in Music Titles by Genre',
     margin=dict(t=50, l=0, r=0, b=0),
     width=1200,
     height=600
