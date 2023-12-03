@@ -4,43 +4,54 @@ import random
 from urllib.error import HTTPError
 
 # Create a connection to the SQLite database
-conn = sqlite3.connect('movies.db')
+conn = sqlite3.connect('title_analysis.db')
 c = conn.cursor()
 
-# Delete the movies table if it already exists
-c.execute('DROP TABLE IF EXISTS movies')
+def create_database():
 
-# Create a new table in the database for the movies and make id the primary key and autoincrement
-c.execute('CREATE TABLE movies (id INTEGER PRIMARY KEY, title varchar(255), genre varchar(255))')
+    # Delete the movies table if it already exists
+    c.execute('DROP TABLE IF EXISTS movies')
 
-# Create an instance of the IMDb class
-ia = IMDb()
+    # Create a new table in the database for the movies and make id the primary key and autoincrement
+    c.execute('CREATE TABLE movies (id INTEGER PRIMARY KEY, title varchar(255), genre varchar(255))')
 
-# Keep track of how many movies we've fetched
-count = 0
+    
 
-# Prepare the SQL statement
-insert_statement = 'INSERT INTO movies (title, genre) VALUES (?, ?)'
+def fetch_movies():
+    # Create an instance of the IMDb class
+    ia = IMDb()
 
-while count < 3000:
-    try:
-        id = random.randint(1, 1000000)
-        print(id)
-        # Get the movie
+    # Keep track of how many movies we've fetched
+    count = 0
+
+    # Prepare the SQL statement
+    insert_statement = 'INSERT INTO movies (title, genre) VALUES (?, ?)'
+
+    while count < 3200:
         try:
-            movie = ia.get_movie(id)
-        except HTTPError as e:
-            print(f"HTTP error occurred: {e}")
-            continue
+            id = random.randint(1, 1000000)
+            # Get the movie
+            try:
+                movie = ia.get_movie(id)
+            except HTTPError as e:
+                print(f"HTTP error occurred: {e}")
+                continue
 
-        if 'title' in movie and 'genres' in movie:
-            title = movie['title']
-            genre = movie['genres'][0] if movie['genres'] else None
-            c.execute(insert_statement, (title, genre))
-            count += 1
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        pass
+            # Check if the movie is in English
+            if 'languages' in movie and 'english' in map(str.lower, movie['languages']):
+                # Filter to only include movies with a title and genre
+                if 'title' in movie and 'genres' in movie:
+                    title = movie['title']
+                    genre = movie['genres'][0] if movie['genres'] else None
+                    c.execute(insert_statement, (title, genre))
+                    count += 1
+
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            pass
+
+create_database()
+fetch_movies()
 
 # Commit the changes and close the connection to the database
 conn.commit()
