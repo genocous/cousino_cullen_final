@@ -1,63 +1,60 @@
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import sqlite3
-import json
-import os
+import time
+
+conn = sqlite3.connect('title_analysis.db')
+c = conn.cursor()
+
 
 client_id = "5af19f5cce964fe194f7caf977d8e540"
 client_secret = "b762b059cd7a42a69bc8f1fc0ea36f9c"
+
 # Set up Spotify API client
 client_credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
 sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
 
-conn = sqlite3.connect('tracks.db')
-c = conn.cursor()
-#c.execute('CREATE TABLE IF NOT EXISTS tracks (id varchar(255), name varchar(255))')
-c.execute('CREATE TABLE IF NOT EXISTS tracks (id varchar(255), name varchar(255), genre varchar(255))')
+def setup_database():
 
-# Load cache
-cache_file = 'cache.json'
-if os.path.exists(cache_file):
-    with open(cache_file, 'r') as f:
-        cache = json.load(f)
-else:
-    cache = {}
+    # Delete table if it already exists
+    c.execute('DROP TABLE IF EXISTS tracks')
 
-# Set up initial search parameters
-limit = 50
-offset = 0
-total_tracks = 1000  # Change this to the total number of tracks you want
+    c.execute('CREATE TABLE IF NOT EXISTS tracks (id INTEGER PRIMARY KEY, name varchar(255), genre varchar(255))')
 
-# Search for tracks
-for year in range(2020, 2023):
-    while offset < total_tracks:
-        results = sp.search(q=f'year:{year}', type='track', limit=limit, offset=offset)
-        
-        # Process tracks
-        for track in results['tracks']['items']:
-            track_id = track['id']
-            track_name = track['name']
+def get_tracks():
 
-            # Get genre from the first artist of the track
-            artist = sp.artist(track['artists'][0]['id'])
-            genre = artist['genres'][0] if artist['genres'] else None
-
-            # Cache track name and genre
-            cache[track_id] = {'name': track_name, 'genre': genre}
-
-            # Store track in the database
-            c.execute('INSERT INTO tracks VALUES (?, ?, ?)', (track_id, track_name, genre))
-
-        # Increase offset for the next batch of tracks
-        offset += limit
-
-    # Reset offset for the next year
+    # Set up initial search parameters
+    limit = 50
     offset = 0
+    total_tracks = 1000  # Change this to the total number of tracks you want
 
-# Save cache
-with open('cache.json', 'w') as f:
-    json.dump(cache, f)
+    # Search for tracks
+    for year in range(2020, 2023):
+        while offset < total_tracks:
+            results = sp.search(q=f'year:{year}', type='track', limit=limit, offset=offset)
+            time.sleep(0.5)
+            # Process tracks
+            for track in results['tracks']['items']:
+                track_id = track['id']
+                track_name = track['name']
+
+                # Get genre from the first artist of the track
+                artist = sp.artist(track['artists'][0]['id'])
+                genre = artist['genres'][0] if artist['genres'] else None
+
+                # Store track in the database
+                c.execute('INSERT INTO tracks VALUES (?, ?, ?)', (track_id, track_name, genre))
+
+            # Increase offset for the next batch of tracks
+            offset += limit
+
+        # Reset offset for the next year
+        offset = 0
 
 # Commit database changes and close connection
 conn.commit()
 conn.close()
+
+# Call functions
+setup_database()
+get_tracks()
