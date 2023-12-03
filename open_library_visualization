@@ -1,0 +1,77 @@
+import sqlite3
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from collections import Counter
+
+nltk.download('punkt')
+nltk.download('stopwords')
+
+import plotly.express as px
+import plotly.graph_objects as go
+import pandas as pd
+
+conn = sqlite3.connect('books.db')
+cursor = conn.cursor()
+
+genre_keywords = ['film','music','fantasy','historical_fiction','horror','humor','science_fiction','young_adult']
+genre_words = {keyword: [] for keyword in genre_keywords}
+
+cursor.execute('SELECT id, title, genre FROM books')
+data = cursor.fetchall()
+
+for row in data:
+    id, title, genre = row
+    tokens = word_tokenize(title.lower())  
+
+    stop_words = set(stopwords.words()) #removes words like 'the' 'a' 'in' etc.
+    other_excluded = ['edgar','allan','poe','music','young','adults']
+
+    filtered_tokens = [word for word in tokens if word.isalpha() and word not in stop_words and word not in other_excluded and len(word) > 1]
+
+    if genre:
+      for keyword in genre_keywords:
+          if keyword in genre.lower():
+              genre_words[keyword].extend(filtered_tokens)
+
+common_words = {}
+for keyword, words in genre_words.items():
+    common_words[keyword] = dict(Counter(words).most_common(10))  
+
+for keyword, words_count in common_words.items():
+    print(f"Most common words in {keyword.capitalize()} book titles:")
+    for word, count in words_count.items():
+        print(f"{word}: {count}")
+    print("\n")
+
+conn.close()
+
+# visualization
+data = []
+for genre, subgenres in common_words.items():
+    for subgenre, value in subgenres.items():
+        data.append({'Genre': genre, 'Subgenre': subgenre, 'Value': value})
+
+df = pd.DataFrame(data)
+df['All Genres'] = 'All Genres'
+
+fig = px.treemap(df, path=['All Genres', 'Genre', 'Subgenre'], values='Value',
+                 color='Value',
+                 hover_name='Subgenre',  
+                 custom_data=['Value'],
+                 color_continuous_scale= "Purples",
+                 range_color=[0,18])
+
+fig.update_layout(
+    title='Common Words in Book Titles by Genre',
+    margin=dict(t=50, l=0, r=0, b=0),
+    width=1200,
+    height=600
+)
+
+fig.update_traces(
+    hovertemplate='Label: %{label}<br>Value: %{customdata[0]}',
+    textfont_size=18  
+)
+
+fig.show()
