@@ -23,15 +23,27 @@ def visualize_sentiment_analysis(db_name, genre_keywords, data_row, color_scheme
 
     df = pd.DataFrame(columns=['id','title','genre','neg','neu','pos','compound'])
 
+    cursor.execute(f'DROP TABLE IF EXISTS {db_name}_sentiment_results')
+
+    cursor.execute(f'CREATE TABLE IF NOT EXISTS {db_name}_sentiment_results (id INTEGER PRIMARY KEY, name varchar(255), genre varchar(255), negative_score REAL, neutral_score REAL, positive_score REAL, compound_score REAL)')
+
     for row in data:
-        song_id, title, genre = row
+        id, title, genre = row
         tokens = word_tokenize(title.lower())  
 
         if genre:
             for keyword in genre_keywords:
                 if keyword in genre.lower():
                     if sia.polarity_scores(' '.join(tokens))['compound']:
-                        df.loc[len(df.index)] = [song_id, title, keyword, sia.polarity_scores(' '.join(tokens))['neg'], sia.polarity_scores(' '.join(tokens))['neu'],sia.polarity_scores(' '.join(tokens))['pos'], sia.polarity_scores(' '.join(tokens))['compound']] 
+                        neg_score = sia.polarity_scores(' '.join(tokens))['neg']
+                        neu_score = sia.polarity_scores(' '.join(tokens))['neu']
+                        pos_score = sia.polarity_scores(' '.join(tokens))['pos']
+                        comp_score = sia.polarity_scores(' '.join(tokens))['compound']
+
+                        df.loc[len(df.index)] = [id, title, keyword, neg_score, neu_score, pos_score, comp_score] 
+
+                        c.execute(f'INSERT INTO {db_name}_sentiment_results VALUES (?, ?, ?, ?, ?, ?, ?)', (id, title, keyword, neg_score, neu_score, pos_score, comp_score))
+
 
     figsize = (15, .8 * len(df['genre'].unique()))
     plt.figure(figsize=figsize)
