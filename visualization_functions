@@ -1,0 +1,101 @@
+import sqlite3
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from collections import Counter
+import plotly.express as px
+import pandas as pd
+
+nltk.download('punkt')
+nltk.download('stopwords')
+
+# function to find the top 10 most common words by genre
+def common_words(db_name, file_name, genre_keywords, excluded_words, data_row):
+    conn = sqlite3.connect(f"{db_name}.db")
+    cursor = conn.cursor()
+
+    genre_words = {keyword: [] for keyword in genre_keywords}
+
+    cursor.execute(f'SELECT {data_row[0]}, {data_row[1]}, {data_row[2]} FROM {db_name}')
+    data = cursor.fetchall()
+
+    for row in data:
+        id, title, genre = row
+        tokens = word_tokenize(title.lower())
+
+        # removes words like 'the' 'a' 'in' etc.
+        stop_words = set(stopwords.words()) 
+
+        filtered_tokens = [word for word in tokens if word.isalpha() and word not in stop_words and word not in excluded_words and len(word) > 1]
+
+        if genre:
+            for keyword in genre_keywords:
+                if keyword in genre.lower():
+                    genre_words[keyword].extend(filtered_tokens)
+
+    common_words = {}
+    for keyword, words in genre_words.items():
+        common_words[keyword] = dict(Counter(words).most_common(10))  
+
+    # write results into a file
+    with open(file_name, "a") as f:
+        for keyword, words_count in common_words.items():
+            print(f"Most common words in {keyword.capitalize()} movie titles:", file=f)
+            for word, count in words_count.items():
+                print(f"{word}: {count}", file=f)
+            print("\n", file=f)
+
+    conn.close()
+    return common_words
+
+# visualize the common_words data through a treemap
+def visualizations(common_words_dict, color_scheme, color_range, title):
+    data = []
+    for genre, subgenres in common_words_dict.items():
+        for subgenre, value in subgenres.items():
+            data.append({'Genre': genre, 'Subgenre': subgenre, 'Value': value})
+
+    df = pd.DataFrame(data)
+    df['All Genres'] = 'All Genres'
+
+    fig = px.treemap(df, path=['All Genres', 'Genre', 'Subgenre'], values='Value',
+                    color='Value',
+                    hover_name='Subgenre',  
+                    custom_data=['Value'],
+                    color_continuous_scale=color_scheme,
+                    range_color=color_range)
+
+    fig.update_layout(
+        title=title,
+        margin=dict(t=50, l=0, r=0, b=0),
+        width=1200,
+        height=600
+    )
+
+    fig.update_traces(
+        hovertemplate='Label: %{label}<br>Value: %{customdata[0]}',
+        textfont_size=18  
+    )
+
+    fig.show()
+
+def main():
+    # music data
+    genre_keywords = ['pop', 'rap', 'hip hop', 'alt', 'country', 'indie']
+    excluded_words = ['feat','taylor','version','lil','like','bon','iver','drake','travis','scott','thug','durk','juice']
+    common_words_result = common_words('tracks','spotify_output.txt', genre_keywords, excluded_words, ['id', 'name', 'genre'])
+    visualizations(common_words_result, 'Greens', [0,10], 'Common Words in Song Titles by Genre')
+
+    # movie data
+    genre_keywords = ['drama','comedy','action','adventure','family','documentary','crime']
+    excluded_words = ['episode', 'dated', 'january', 'february','march','april','may','june','july','august','september','october','november','december']
+    common_words_result = common_words('movies', 'movie_output.txt', genre_keywords, excluded_words, ['id','title','genre'])
+    visualizations(common_words_result, 'Blues', [0,9], 'Common Words in Movie Titles by Genre')
+
+    # book data
+    genre_keywords = ['film','music','fantasy','historical_fiction','horror','humor','science_fiction','young_adult']
+    excluded_words = ['edgar','allan','poe','music','young','adults']
+    common_words_result = common_words('books','book_output.txt', genre_keywords, excluded_words, ['id', 'title', 'genre'])
+    visualizations(common_words_result, 'Purples', [0,18], 'Common Words in Book Titles by Genre')
+
+main()
