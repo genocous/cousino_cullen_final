@@ -11,7 +11,7 @@ nltk.download('stopwords')
 
 # function to find the top 10 most common words by genre
 def common_words(db_name, file_name, genre_keywords, excluded_words, data_row):
-    conn = sqlite3.connect(f"{db_name}.db")
+    conn = sqlite3.connect("title_analysis.db")
     cursor = conn.cursor()
 
     genre_words = {keyword: [] for keyword in genre_keywords}
