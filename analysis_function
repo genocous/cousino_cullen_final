@@ -1,0 +1,56 @@
+import sqlite3
+import nltk
+from nltk.tokenize import word_tokenize
+import pandas as pd
+
+nltk.download('punkt')
+nltk.download('vader_lexicon')
+
+from nltk.sentiment import SentimentIntensityAnalyzer
+
+from matplotlib import pyplot as plt
+import seaborn as sns
+
+# function to analyze negative, neutral, and positive sentiments of various titles
+def visualize_sentiment_analysis(db_name, genre_keywords, data_row, color_scheme, title):
+    sia = SentimentIntensityAnalyzer()
+
+    conn = sqlite3.connect('title_analysis.db')
+    cursor = conn.cursor()
+
+    cursor.execute(f'SELECT {data_row[0]}, {data_row[1]}, {data_row[2]} FROM {db_name}')
+    data = cursor.fetchall()
+
+    df = pd.DataFrame(columns=['id','title','genre','neg','neu','pos','compound'])
+
+    for row in data:
+        song_id, title, genre = row
+        tokens = word_tokenize(title.lower())  
+
+        if genre:
+            for keyword in genre_keywords:
+                if keyword in genre.lower():
+                    if sia.polarity_scores(' '.join(tokens))['compound']:
+                        df.loc[len(df.index)] = [song_id, title, keyword, sia.polarity_scores(' '.join(tokens))['neg'], sia.polarity_scores(' '.join(tokens))['neu'],sia.polarity_scores(' '.join(tokens))['pos'], sia.polarity_scores(' '.join(tokens))['compound']] 
+
+    figsize = (15, .8 * len(df['genre'].unique()))
+    plt.figure(figsize=figsize)
+    sns.boxplot(df, y='genre', x='compound', palette=color_scheme, showmeans=True, meanprops={"marker":"x","markeredgecolor":"black","markersize":"10"}).set(title=title)
+    sns.despine(top=True, right=True, bottom=True, left=True)
+
+    plt.show()
+    
+def main():
+    # music data
+    genre_keywords = ['pop', 'rap', 'hip hop', 'alt', 'country', 'indie']
+    visualize_sentiment_analysis('tracks', genre_keywords, ['id', 'name', 'genre'], 'Greens', 'Sentiment Analysis of Song Titles by Genre')
+
+    # movie data
+    genre_keywords = ['drama','comedy','action','adventure','family','documentary','crime']
+    visualize_sentiment_analysis('movies', genre_keywords, ['id', 'title', 'genre'], 'Blues', 'Sentiment Analysis of Movie Titles by Genre')
+
+    # book data
+    genre_keywords = ['film','music','fantasy','historical_fiction','horror','humor','science_fiction','young_adult']
+    visualize_sentiment_analysis('books', genre_keywords, ['id', 'title', 'genre'], 'Purples', 'Sentiment Analysis of Book Titles by Genre')
+
+main()
