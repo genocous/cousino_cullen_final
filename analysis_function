@@ -42,7 +42,7 @@ def visualize_sentiment_analysis(db_name, genre_keywords, data_row, color_scheme
 
                         df.loc[len(df.index)] = [id, title, keyword, neg_score, neu_score, pos_score, comp_score] 
 
-                        c.execute(f'INSERT INTO {db_name}_sentiment_results VALUES (?, ?, ?, ?, ?, ?, ?)', (id, title, keyword, neg_score, neu_score, pos_score, comp_score))
+                        cursor.execute(f'INSERT INTO {db_name}_sentiment_results VALUES (?, ?, ?, ?, ?, ?, ?)', (id, title, keyword, neg_score, neu_score, pos_score, comp_score))
 
 
     figsize = (15, .8 * len(df['genre'].unique()))
