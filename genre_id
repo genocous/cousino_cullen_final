@@ -1,0 +1,53 @@
+import sqlite3
+
+# Create a connection to the SQLite database
+conn = sqlite3.connect('title_analysis.db')
+c = conn.cursor()
+
+def create_table():
+    c.execute('CREATE TABLE IF NOT EXISTS genres (id INTEGER PRIMARY KEY, genre varchar(255))')
+
+    song_genres = ['pop', 'rap', 'hip hop', 'alt', 'country', 'indie']
+    movie_genres = ['drama','comedy','action','adventure','family','documentary','crime']
+    book_genres = ['film','music','fantasy','historical_fiction','horror','humor','science_fiction','young_adult']
+
+    id = 0
+    for genre in song_genres:
+        #c.execute(f'INSERT INTO genres VALUES (?, ?)', (id, genre))
+        id += 1
+
+    for genre in movie_genres:
+        #c.execute(f'INSERT INTO genres VALUES (?, ?)', (id, genre))
+        id += 1
+
+    for genre in book_genres:
+        #c.execute(f'INSERT INTO genres VALUES (?, ?)', (id, genre))
+        id += 1
+
+    try:
+        c.execute('ALTER TABLE tracks ADD COLUMN genre_id INT')
+    except:
+        pass
+    c.execute('UPDATE tracks SET genre_id = genres.id FROM genres WHERE tracks.genre = genres.genre')
+    c.execute('ALTER TABLE movies DROP COLUMN genre')
+
+    try:
+        c.execute('ALTER TABLE movies ADD COLUMN genre_id INT')
+    except:
+        pass
+    c.execute('UPDATE movies SET genre_id = genres.id FROM genres WHERE movies.genre = genres.genre')
+    c.execute('ALTER TABLE movies DROP COLUMN genre')
+
+    try:
+        c.execute('ALTER TABLE books ADD COLUMN genre_id INT')
+    except:
+        pass
+    c.execute('UPDATE books SET genre_id = genres.id FROM genres WHERE books.genre = genres.genre')
+    c.execute('ALTER TABLE movies DROP COLUMN genre')
+
+
+create_table()
+
+# Commit the changes and close the connection to the database
+conn.commit()
+conn.close()
