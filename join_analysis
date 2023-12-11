@@ -1,0 +1,35 @@
+import sqlite3
+from collections import Counter
+
+from nltk.corpus import stopwords
+import nltk
+nltk.download('stopwords')
+
+conn = sqlite3.connect('title_analysis.db')
+c = conn.cursor()
+
+c.execute('''
+    SELECT movies.title as movie_title, books.title as book_title
+    FROM movies
+    JOIN books ON movies.genre = 'Horror' AND books.genre = 'horror'
+''')
+
+rows = c.fetchall()
+conn.close()
+
+movie_titles = [row[0] for row in rows]
+book_titles = [row[1] for row in rows]
+
+all_titles = movie_titles + book_titles
+
+stop_words = set(stopwords.words('english'))
+other_words = ['/','-']
+words_counter = Counter(word.lower() for title in all_titles for word in title.split() if word.lower() not in stop_words and word.lower() not in other_words)
+
+most_common_words = words_counter.most_common(10)  
+
+with open('join_output.txt', "a") as f:
+    print("Most common words in horror titles (books and movies):", file=f)
+    for word, count in most_common_words:
+        print(f"{word}: {count}", file=f)
+
