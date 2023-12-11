@@ -7,11 +7,10 @@ conn = sqlite3.connect('title_analysis.db')
 c = conn.cursor()
 
 def create_table():
-    
     c.execute('CREATE TABLE IF NOT EXISTS books (id INTEGER PRIMARY KEY, title varchar(255), genre varchar(255))')
 
 
-def fetch_books():
+def get_books():
     insert_statement = 'INSERT INTO books (title, genre) VALUES (?, ?)'
     subjects = ['fantasy', 'historical fiction', 'horror', 'mystery', 'romance', 'science fiction', 'thriller']
 
@@ -34,8 +33,8 @@ def fetch_books():
                 title = work.get('title', '')
                 try:
                     if detect(title) == 'en':
-                        # Process the book
-                        pass  # Replace this with your code to process the book
+                        c.execute(insert_statement, (title, subject))
+                        books_added += 1
                 except:
                     print("Error detecting language for title:", title)
         except requests.exceptions.HTTPError as errh:
@@ -53,7 +52,7 @@ def fetch_books():
 
         if not works:
             continue  # Skip to the next iteration if there are no works for the subject
-
+        """
         for work in works:
             title = work.get('title', '')
             c.execute(insert_statement, (title, subject))
@@ -61,12 +60,12 @@ def fetch_books():
 
             if books_added >= total_books:
                 break  # Exit the loop when the desired number of books is reached
-
+        """
         offset += 1  # Increase the offset by 1 for each iteration
 
     conn.commit()
 
 create_table()
-get_titles()
+get_books()
 
 conn.close()
