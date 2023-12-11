@@ -13,15 +13,15 @@ def create_table():
 
     id = 0
     for genre in song_genres:
-        #c.execute(f'INSERT INTO genres VALUES (?, ?)', (id, genre))
+        c.execute(f'INSERT INTO genres VALUES (?, ?)', (id, genre))
         id += 1
 
     for genre in movie_genres:
-        #c.execute(f'INSERT INTO genres VALUES (?, ?)', (id, genre))
+        c.execute(f'INSERT INTO genres VALUES (?, ?)', (id, genre))
         id += 1
 
     for genre in book_genres:
-        #c.execute(f'INSERT INTO genres VALUES (?, ?)', (id, genre))
+        c.execute(f'INSERT INTO genres VALUES (?, ?)', (id, genre))
         id += 1
 
     try:
