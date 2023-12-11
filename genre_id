@@ -24,12 +24,15 @@ def create_table():
         c.execute(f'INSERT INTO genres VALUES (?, ?)', (id, genre))
         id += 1
 
+    conn.commit()
+
+def update_tables():
     try:
         c.execute('ALTER TABLE tracks ADD COLUMN genre_id INT')
     except:
         pass
     c.execute('UPDATE tracks SET genre_id = genres.id FROM genres WHERE tracks.genre = genres.genre')
-    c.execute('ALTER TABLE movies DROP COLUMN genre')
+    c.execute('ALTER TABLE tracks DROP COLUMN genre')
 
     try:
         c.execute('ALTER TABLE movies ADD COLUMN genre_id INT')
@@ -45,9 +48,11 @@ def create_table():
     c.execute('UPDATE books SET genre_id = genres.id FROM genres WHERE books.genre = genres.genre')
     c.execute('ALTER TABLE movies DROP COLUMN genre')
 
+    conn.commit()
+
 
 create_table()
+update_tables()
 
-# Commit the changes and close the connection to the database
-conn.commit()
+
 conn.close()
