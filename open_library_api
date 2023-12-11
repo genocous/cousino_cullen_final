@@ -1,28 +1,72 @@
+import random
 import sqlite3
 import requests
-import random
+from langdetect import detect
 
-conn = sqlite3.connect('books.db')
+conn = sqlite3.connect('title_analysis.db')
 c = conn.cursor()
 
-c.execute('DROP TABLE IF EXISTS books')
+def create_table():
+    
+    c.execute('CREATE TABLE IF NOT EXISTS books (id INTEGER PRIMARY KEY, title varchar(255), genre varchar(255))')
 
-c.execute('CREATE TABLE books (id INTEGER PRIMARY KEY, title varchar(255), genre varchar(255))')
 
-insert_statement = 'INSERT INTO books (title, genre) VALUES (?, ?)'
-subjects = ['film','music','fantasy','historical_fiction','horror','humor','science_fiction','young_adult']
+def fetch_books():
+    insert_statement = 'INSERT INTO books (title, genre) VALUES (?, ?)'
+    subjects = ['fantasy', 'historical fiction', 'horror', 'mystery', 'romance', 'science fiction', 'thriller']
 
-for subject in subjects:
-    offset = 0
-    response = requests.get(f"https://openlibrary.org/subjects/{subject}.json?limit=25&offset={offset}")
-    work_count = response.json()['work_count']
+    total_books = 25  # Set the total number of books you want
+    books_added = 0
 
-    while offset < (work_count - 25) and offset < (375 - 25):
-      offset += 25
-      response = requests.get(f"https://openlibrary.org/subjects/{subject}.json?limit=25&offset={offset}")
-      for i in range(0,25):
-        title = response.json()['works'][i]['title']
-        c.execute(insert_statement, (title, subject))
+    
 
-conn.commit()
+    while books_added < total_books:
+        subject = random.choice(subjects)  # Randomly select a subject from the list
+        random_offset = random.randint(0, 100000)  # Adjust the range based on your needs
+        offset = random_offset
+
+        response = requests.get(f"https://openlibrary.org/subjects/{subject}.json?limit=1&offset={offset}")
+
+        try:
+            response.raise_for_status()  # Check if the request was successful
+            works = response.json().get('works', [])
+            for work in works:
+                title = work.get('title', '')
+                try:
+                    if detect(title) == 'en':
+                        # Process the book
+                        pass  # Replace this with your code to process the book
+                except:
+                    print("Error detecting language for title:", title)
+        except requests.exceptions.HTTPError as errh:
+            print("HTTP Error:", errh)
+            break
+        except requests.exceptions.ConnectionError as errc:
+            print("Error Connecting:", errc)
+            break
+        except requests.exceptions.Timeout as errt:
+            print("Timeout Error:", errt)
+            break
+        except requests.exceptions.RequestException as err:
+            print("Error:", err)
+            break
+
+        if not works:
+            continue  # Skip to the next iteration if there are no works for the subject
+
+        for work in works:
+            title = work.get('title', '')
+            c.execute(insert_statement, (title, subject))
+            books_added += 1
+
+            if books_added >= total_books:
+                break  # Exit the loop when the desired number of books is reached
+
+        offset += 1  # Increase the offset by 1 for each iteration
+
+    conn.commit()
+
+create_table()
+get_titles()
+
 conn.close()
