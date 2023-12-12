@@ -10,7 +10,7 @@ def create_table():
     c.execute('CREATE TABLE IF NOT EXISTS books (id INTEGER PRIMARY KEY, title varchar(255), genre varchar(255))')
 
 
-def get_books():
+def fetch_books():
     insert_statement = 'INSERT INTO books (title, genre) VALUES (?, ?)'
     subjects = ['fantasy', 'historical fiction', 'horror', 'mystery', 'romance', 'science fiction', 'thriller']
 
@@ -52,20 +52,13 @@ def get_books():
 
         if not works:
             continue  # Skip to the next iteration if there are no works for the subject
-        """
-        for work in works:
-            title = work.get('title', '')
-            c.execute(insert_statement, (title, subject))
-            books_added += 1
-
-            if books_added >= total_books:
-                break  # Exit the loop when the desired number of books is reached
-        """
+        
         offset += 1  # Increase the offset by 1 for each iteration
 
     conn.commit()
 
 create_table()
-get_books()
+fetch_books()
 
+conn.commit()
 conn.close()
