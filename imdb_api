@@ -9,7 +9,7 @@ c = conn.cursor()
 
 def create_table():
 
-    # Create a new table in the database for the movies and make id the primary key and autoincrement
+    # Create a new table in the database for the movies 
     c.execute('CREATE TABLE IF NOT EXISTS movies (id INTEGER PRIMARY KEY, title varchar(255), genre varchar(255))')
 
     
