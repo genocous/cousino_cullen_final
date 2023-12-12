@@ -1,6 +1,7 @@
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import sqlite3
+import random
 
 # Set up Spotify API credentials
 client_id = "5af19f5cce964fe194f7caf977d8e540"
@@ -13,53 +14,59 @@ sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
 conn = sqlite3.connect('title_analysis.db')
 c = conn.cursor()
 
-def setup_table():
-    
-    # Create table if it doesn't exist
+def create_table():
     c.execute('CREATE TABLE IF NOT EXISTS tracks (id INTEGER PRIMARY KEY, name varchar(255), genre varchar(255))')
 
-def get_tracks():
-    # Set up initial search parameters
+def fetch_tracks():
     limit = 5
-    total_tracks = 5  # Update to the total number of tracks you want to add
+    total_tracks = 25  # Set the desired total number of tracks
+    insert_statement = 'INSERT INTO tracks (name, genre) VALUES (?, ?)'
 
-    # Search for tracks
-    for year in range(2018, 2023):
-        offset = 0  # Reset offset for each year
-        count = c.execute('SELECT COUNT(*) FROM tracks').fetchone()[0]
+    fetched_tracks = set()
 
-        while offset < total_tracks:
-            results = sp.search(q=f'year:{year}', type='track', limit=limit, offset=offset)
+    # Fetch already stored tracks from the database
+    stored_tracks = set(c.execute('SELECT name FROM tracks').fetchall())
 
-            # Process tracks
-            for track in results['tracks']['items']:
+    years = list(range(2018, 2023))
+    random.shuffle(years)
 
-                # Make sure the track title is not in the database already
-                if c.execute('SELECT * FROM tracks WHERE name=?', (track['name'],)).fetchone():
+    for year in years:
+        offset = 0
+
+        while len(fetched_tracks) < total_tracks and offset < total_tracks:
+            response = sp.search(q=f'year:{year}', type='track', limit=limit, offset=offset)
+            tracks = response['tracks']['items']
+
+            for track in tracks:
+                track_name = track['name']
+
+                if track_name in fetched_tracks or track_name in stored_tracks:
                     continue
 
-                track_name = track['name']
-                count += 1
+                fetched_tracks.add(track_name)
+
                 # Get genre from the first artist of the track
                 artist = sp.artist(track['artists'][0]['id'])
                 genre = artist['genres'][0] if artist['genres'] else None
 
-                # Store track in the database
-                c.execute('INSERT INTO tracks VALUES (?, ?, ?)', (count, track_name, genre))
+                c.execute(insert_statement, (track_name, genre))
 
-            # Increase offset for the next batch of tracks
             offset += limit
 
-    # Commit database changes (moved outside the loop to commit once after all iterations)
+            # If we reach the end of the results, break to the next year
+            if len(tracks) < limit:
+                break
+
+        # If we've fetched enough tracks, break from the outer loop
+        if len(fetched_tracks) >= total_tracks:
+            break
+
     conn.commit()
 
-
 # Call functions
-setup_table()
-get_tracks()
-
+create_table()
+fetch_tracks()
 
 # Commit database changes and close connection
 conn.commit()
 conn.close()
-
